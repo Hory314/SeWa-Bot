@@ -1,0 +1,17 @@
+{
+  "name": "sewabot",
+  "version": "1.0.0",
+  "description": "sewabot",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "discord.js": "^11.5.1",
+    "ffmpeg": "0.0.4",
+    "ffmpeg-binaries": "^4.0.0",
+    "opusscript": "0.0.6"
+  }
+}
