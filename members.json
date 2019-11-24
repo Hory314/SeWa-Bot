@@ -1,0 +1,36 @@
+[
+  {
+    "name": "Sewa Bot",
+    "discord-id": "599581644961349642"
+  },
+  {
+    "name": "Seba",
+    "discord-id": "368418440060600339",
+    "play-file": "/media/sewa.m4a"
+  },
+  {
+    "name": "Hory",
+    "discord-id": "383327335010664448",
+    "play-file": "/media/hory.m4a"
+  },
+  {
+    "name": "Szymonek",
+    "discord-id": "411161414682804235",
+    "play-file": "/media/szymon.m4a"
+  },
+  {
+    "name": "Smok",
+    "discord-id": "368407719427833859",
+    "play-file": "/media/pik_pik.mp3"
+  },
+  {
+    "name": "Kluska",
+    "discord-id": "475033099219238913",
+    "play-file": "/media/masno_ni.mp3"
+  },
+  {
+    "name": "Basket",
+    "discord-id": "566977618658852865",
+    "play-file": "/media/basket.m4a"
+  }
+]

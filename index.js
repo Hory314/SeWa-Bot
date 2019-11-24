@@ -1,72 +1,121 @@
+require('./Logger');
 const Discord = require('discord.js');
-const {prefix, token} = require('./config.json');
+const {token} = require('./config.json');
+const members = require('./members');
+const Logger = require('./Logger.js');
+const logger = new Logger();
 const bot = new Discord.Client();
-const sebbyTag = "sebby#3094"; // sebby#3094 // Horacy#9187
-const SEBBY_ID = "368418440060600339";
-// const SEBBY_ID = "383327335010664448"; // Horacy#9187 id
-const SZYMON_ID = "411161414682804235";
 const COOLDOWN_TIME = 10000;
 let cooldown = false;
-let lastChannelId = "0";
 
-bot.on('ready', () =>
-{
-    console.log("===== BOT IS ONLINE =====");
-
-    bot.user.setStatus('online')
-        .then()
-        .catch();
-});
 
 const joinBot = function (oldMember, newMember)
 {
-    let newVoiceCh = newMember.voiceChannel;
-    console.log(`Dołączył ${newMember.user.username} (tag: ${newMember.user.tag}) (id: ${newMember.user.id})`);
+    if (newMember.user.id === getMemberDiscordIdByName("Sewa Bot")) return; // don't handle bot himself
 
-    if (newMember.user.id === SEBBY_ID || newMember.user.id === SZYMON_ID)
-    {
-        if (newMember.voiceChannelID === null) lastChannelId = "0";
-    }
+    let newUserChannel = newMember.voiceChannel;
+    let oldUserChannel = oldMember.voiceChannel;
 
-    if (lastChannelId !== newMember.voiceChannelID && newVoiceCh)
+    try
     {
-        lastChannelId = newMember.voiceChannelID;
-        console.log(`Dołączył ${newMember.user.username} (tag: ${newMember.user.tag}) (id: ${newMember.user.id})`);
-        if (newMember.user.id === SEBBY_ID || newMember.user.id === SZYMON_ID)
+        if (oldUserChannel === undefined && newUserChannel !== undefined) // user joins a voice channel
         {
-            newMember.voiceChannel.join().then(connection =>
+            logger.append(`${newMember.user.username} (id: ${newMember.user.id}) przychodzi na kanał ${newMember.voiceChannel.name}: `);
+            if (!cooldown)
             {
-                if(newMember.user.id === SEBBY_ID) connection.playFile(__dirname + '/media/sewa.m4a');
-                if(newMember.user.id === SZYMON_ID) connection.playFile(__dirname + '/media/szymon.m4a');
-                // const dispatcher = connection.playFile('/opt/nodejs/sewabot/media/sewa.m4a');
+                // noinspection JSUnresolvedFunction
+                let member = members.find(member => member['discord-id'] === newMember.user.id);
 
-                bot.setTimeout(() =>
+                if (member !== undefined)
                 {
-                    (bot.voiceConnections).forEach(i =>
+                    logger.append(`znaleziono jako ${member.name}: `);
+                    let voiceChannel = newMember.voiceChannel;
+                    voiceChannel.join()
+                        .then(connection =>
+                        {
+                            let dispatcher = connection.playFile(__dirname + member['play-file']);
+                            logger.info(`odtwarzam ${member['play-file']}`);
+                            cooldown = true; // setting cooldown, if correctly played file
+
+                            dispatcher.on("end", () =>
+                            {
+                                voiceChannel.leave();
+                            });
+                        })
+                        .catch((err) =>
+                        {
+                            logger.error(`błąd odtwarzania\n${err}`);
+                        });
+
+                    bot.setTimeout(() =>
                     {
-                        i.channel.leave();
-                    });
-                    console.log("TIME UP! Bot disconnected!");
-                }, 5000);
-            })
-                .catch(() =>
+                        cooldown = false;
+                    }, COOLDOWN_TIME);
+                }
+                else
                 {
-                    // don't handle errors
-                });
-
-            cooldown = true;
-
-            bot.setTimeout(() =>
+                    logger.info("nie znaleziono");
+                }
+            }
+            else
             {
-                cooldown = false;
-            }, COOLDOWN_TIME);
+                logger.info(`cooldown aktywny`);
+            }
         }
+        else if (newUserChannel === undefined) // user leaves a voice channel
+        {
+            Logger.info(`${newMember.user.username} (id: ${newMember.user.id}) odchodzi z kanału ${oldMember.voiceChannel.name}`);
+        }
+        else // user switches a voice channel (or mute / unmute / mic-source-change todo: implement later)
+        {
+            let oldC = oldMember.voiceChannel.name;
+            let newC = newMember.voiceChannel.name;
+            if (oldC !== newC)
+            {
+                Logger.info(`${newMember.user.username} (id: ${newMember.user.id}) zmienia kanał ${oldC} -> ${newC}`);
+            }
+            else
+            {
+                Logger.info(`${newMember.user.username} (id: ${newMember.user.id}) mutuje/odmutowuje się (lub zmienił źródło nagrywania)`);
+            }
+        }
+    }
+    catch (e)
+    {
+        Logger.fatal(`General Exception while user join/leave/switch voice channel.\n${e}`);
+        // to not exit, try to stay alive
     }
 };
 
 bot.on('voiceStateUpdate', (oldM, newM) =>
 {
-    if (!cooldown) joinBot(oldM, newM);
+    joinBot(oldM, newM);
 });
 
-bot.login(token);
+bot.on('ready', () =>
+{
+    Logger.info("Bot is ready");
+
+    bot.user.setStatus('online')
+        .then(() => Logger.info("Bot is online"))
+        .catch(err =>
+        {
+            Logger.fatal(`Error while setting bot status to online\n${err}`);
+            process.exit(1);
+        });
+});
+
+bot.login(token)
+    .then()
+    .catch(err =>
+    {
+        Logger.fatal(`Error on bot login with token!\n${err}`);
+        process.exit(1);
+    });
+
+function getMemberDiscordIdByName(name)
+{
+    // noinspection JSUnresolvedFunction
+    let member = members.find(member => member['name'] === name);
+    return member["discord-id"];
+}

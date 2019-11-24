@@ -1,0 +1,12 @@
+{
+  "send_allowed": false,
+  "messages": [
+    {
+      "channels": [
+        "597818742155771907",
+        "457647250542297088"
+      ],
+      "message": "msg"
+    }
+  ]
+}
